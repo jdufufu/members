@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+        body{background:#f0f2f5;min-height:100vh;overflow-x:hidden;}
+        .loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;}
+        .loading-icon{width:80px;height:80px;}.loading-icon svg{width:100%;height:100%;}
+        .header{background:#1a1a2e;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;z-index:100;height:60px;}
+        .header-left{display:flex;align-items:center;gap:15px;}
+        .hamburger{cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:5px;}
+        .hamburger span{width:25px;height:3px;background:#fff;border-radius:2px;transition:0.3s;}
+        .header-title{color:#fff;font-size:18px;font-weight:600;}
+        .header-right{display:flex;align-items:center;gap:15px;}
+        .header-icon{position:relative;cursor:pointer;color:#fff;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.3s;}
+        .header-icon:hover{background:rgba(255,255,255,0.1);}
+        .header-icon svg{width:22px;height:22px;fill:#fff;}
+        .profile-avatar-btn{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:#fff;font-weight:700;font-size:16px;user-select:none;}
+        .dropdown-popup{position:absolute;top:50px;right:0;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);min-width:220px;display:none;z-index:200;overflow:hidden;}
+        .dropdown-popup.show{display:block;animation:fadeDown 0.3s ease;}
+        @keyframes fadeDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+        .dropdown-popup .no-data{padding:30px 20px;text-align:center;color:#999;font-size:14px;}
+        .dropdown-popup .no-data svg{width:40px;height:40px;fill:#ccc;margin-bottom:10px;}
+        .profile-dropdown-popup{min-width:200px;max-width:220px;}
+        .profile-dropdown-header{padding:18px 16px 14px;}
+        .profile-dropdown-name{font-family:'Georgia',serif;font-size:17px;font-weight:700;color:#1a1a1a;}
+        .profile-dropdown-email{font-size:12px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .profile-dropdown .dropdown-divider{height:1px;background:#eee;margin:0;}
+        .profile-dropdown .dropdown-item{padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.2s;color:#333;font-size:14px;}
+        .profile-dropdown .dropdown-item:hover{background:#f5f5f5;}
+        .profile-dropdown .dropdown-item svg{width:18px;height:18px;fill:#555;}
+        .profile-dropdown .dropdown-item.signout-item{color:#333;padding:16px;}
+        .sidebar-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:500;display:none;opacity:0;transition:opacity 0.3s;}
+        .sidebar-overlay.show{display:block;opacity:1;}
+        .sidebar{position:fixed;top:0;left:-300px;width:280px;height:100%;background:#1a1a2e;z-index:600;transition:left 0.3s ease;overflow-y:auto;}
+        .sidebar.open{left:0;}
+        .sidebar-header{padding:25px 20px;display:flex;align-items:center;gap:15px;border-bottom:1px solid rgba(255,255,255,0.1);}
+        .sidebar-avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .sidebar-avatar svg{width:28px;height:28px;fill:#fff;}
+        .sidebar-username{color:#fff;font-size:16px;font-weight:600;}
+        .sidebar-nav{padding:10px 0;}
+        .sidebar-item{padding:14px 20px;display:flex;align-items:center;gap:12px;color:#ccc;cursor:pointer;transition:all 0.2s;font-size:14px;}
+        .sidebar-item:hover,.sidebar-item.active{background:rgba(255,255,255,0.1);color:#fff;}
+        .sidebar-item svg{width:20px;height:20px;fill:currentColor;flex-shrink:0;}
+        .sidebar-sub{display:none;background:rgba(0,0,0,0.2);}
+        .sidebar-sub.open{display:block;}
+        .sidebar-sub .sidebar-item{padding-left:55px;font-size:13px;}
+        .sidebar-item .arrow{margin-left:auto;transition:transform 0.3s;}
+        .sidebar-item .arrow.rotated{transform:rotate(90deg);}
+        .main-content{padding-top:60px;padding-bottom:50px;min-height:100vh;display:none;}
+        .main-content.show{display:block;}
+        .dashboard-content{padding:20px;animation:slideUp 0.6s ease;}
+        @keyframes slideUp{from{opacity:0;transform:translateY(50px);}to{opacity:1;transform:translateY(0);}}
+        .info-card{background:#e8e8e8;border-radius:12px;padding:20px;margin-bottom:15px;max-width:600px;margin-left:auto;margin-right:auto;}
+        .info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.08);font-size:14px;color:#333;}
+        .info-row:last-child{border-bottom:none;}
+        .info-row .label{font-weight:500;color:#666;}
+        .info-row .value{font-weight:600;display:flex;align-items:center;gap:8px;}
+        .copy-btn{cursor:pointer;padding:4px;border-radius:4px;transition:background 0.2s;}
+        .copy-btn:hover{background:rgba(0,0,0,0.1);}
+        .copy-btn svg{width:16px;height:16px;fill:#666;}
+        .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:600px;margin:0 auto;}
+        .stat-card{background:#e8e8e8;border-radius:10px;padding:15px;text-align:center;}
+        .stat-card .stat-label{font-size:12px;color:#666;margin-bottom:5px;}
+        .stat-card .stat-value{font-size:16px;font-weight:700;color:#333;}
+        .stat-card.full-width{grid-column:1/-1;}
+        .page{display:none;padding:20px;animation:slideUp 0.4s ease;}
+        .page.active{display:block;}
+        .page-title{font-size:20px;font-weight:700;color:#333;margin-bottom:20px;text-align:center;}
+        .form-group{margin-bottom:15px;max-width:500px;margin-left:auto;margin-right:auto;}
+        .form-group label{display:block;font-size:13px;color:#666;margin-bottom:5px;font-weight:500;}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:12px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;transition:border-color 0.3s;background:#fff;outline:none;}
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#667eea;}
+        .form-group input[readonly]{background:#f5f5f5;color:#999;cursor:not-allowed;}
+        .form-group input.no-grey-disabled{background:#fff!important;color:#333!important;-webkit-text-fill-color:#333!important;opacity:1!important;cursor:default;}
+        .btn{padding:12px 30px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;display:inline-block;text-align:center;}
+        .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(102,126,234,0.4);}
+        .btn-danger{background:#e74c3c;color:#fff;}.btn-danger:hover{background:#c0392b;}
+        .btn-success{background:#27ae60;color:#fff;}
+        .btn-block{width:100%;max-width:500px;display:block;margin:10px auto;}
+        .table-container{overflow-x:auto;max-width:100%;margin:15px auto;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.08);}
+        table{width:100%;border-collapse:collapse;min-width:500px;}
+        th{background:#1a1a2e;color:#fff;padding:12px 15px;text-align:left;font-size:13px;font-weight:600;}
+        td{padding:12px 15px;border-bottom:1px solid #eee;font-size:13px;color:#555;}
+        tr:hover td{background:#f8f9fa;}
+        .status-pending{color:#f39c12;font-weight:600;}
+        .status-complete{color:#27ae60;font-weight:600;}
+        .wallet-box{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;padding:25px;text-align:center;color:#fff;max-width:500px;margin:0 auto 20px;}
+        .wallet-box .wallet-label{font-size:14px;opacity:0.9;margin-bottom:5px;}
+        .wallet-box .wallet-amount{font-size:28px;font-weight:700;}
+        .wallet-box .wallet-unit{font-size:14px;opacity:0.8;}
+        .custom-select{position:relative;max-width:500px;margin:0 auto 15px;}
+        .custom-select select{width:100%;padding:12px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;outline:none;cursor:pointer;appearance:auto;}
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center;}
+        .modal-overlay.show{display:flex;}
+        .modal-box{background:#fff;border-radius:12px;padding:30px;max-width:400px;width:90%;text-align:center;animation:fadeDown 0.3s ease;}
+        .modal-box h3{margin-bottom:15px;color:#333;}
+        .modal-box input{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;text-align:center;font-size:18px;letter-spacing:5px;margin-bottom:15px;outline:none;}
+        .modal-box input:focus{border-color:#667eea;}
+        .qr-container{text-align:center;max-width:500px;margin:0 auto;}
+        .qr-code{width:200px;height:200px;margin:20px auto;background:#f0f0f0;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+        .qr-code svg{width:180px;height:180px;}
+        .address-text{font-size:12px;color:#666;word-break:break-all;padding:10px;background:#f5f5f5;border-radius:8px;margin:10px auto;max-width:300px;}
+        .ticket-area textarea{min-height:120px;resize:vertical;}
+        .calendar-display{font-size:12px;color:#888;text-align:right;margin-top:5px;display:flex;align-items:center;justify-content:flex-end;gap:5px;}
+        .calendar-display svg{width:14px;height:14px;fill:#888;}
+        @media(max-width:480px){.stat-grid{grid-template-columns:1fr;}.header-title{font-size:15px;}}
+        .no-data-display{text-align:center;padding:40px 20px;color:#999;}
+        .no-data-display svg{width:60px;height:60px;fill:#ddd;margin-bottom:10px;}
+        .history-card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);max-width:500px;margin-left:auto;margin-right:auto;}
+        .history-card .history-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;}
+        .history-card .history-row .hl{color:#888;}.history-card .history-row .hv{color:#333;font-weight:500;}
+        .name-reveal{font-size:13px;color:#27ae60;margin-top:5px;display:none;max-width:500px;margin-left:auto;margin-right:auto;padding-left:15px;}
+        .name-reveal.show{display:block;}
+        .rank-badge{width:100px;height:100px;margin:0 auto 15px;background:linear-gradient(135deg,#f6d365,#fda085);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+        .rank-badge svg{width:50px;height:50px;fill:#fff;}
+        .ticket-chat-area{max-height:420px;overflow-y:auto;padding:10px 0;margin-bottom:10px;}
+        .chat-message{margin-bottom:12px;display:flex;}
+        .chat-message.user-msg{justify-content:flex-end;}.chat-message.admin-msg{justify-content:flex-start;}
+        .chat-bubble{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;}
+        .chat-message.user-msg .chat-bubble{background:#1a1a2e;color:#fff;border-bottom-right-radius:4px;}
+        .chat-message.admin-msg .chat-bubble{background:#e8e8e8;color:#333;border-bottom-left-radius:4px;}
+        .chat-sender{font-size:11px;font-weight:600;margin-bottom:2px;opacity:0.85;}
+        .chat-time{font-size:10px;opacity:0.6;margin-top:4px;text-align:right;}
+        .ticket-back-btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#555;font-weight:500;padding:6px 0;margin-bottom:10px;}
+        .ticket-back-btn:hover{color:#333;}.ticket-back-btn svg{width:18px;height:18px;fill:currentColor;}
+        .ticket-status-bar{background:#e8e8e8;border-radius:8px;padding:10px 15px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#555;}
+        .ticket-waiting-msg{text-align:center;padding:15px;color:#888;font-size:13px;font-style:italic;}
+        .ticket-closed-msg{text-align:center;padding:15px;color:#999;font-size:13px;background:#e8e8e8;border-radius:8px;}
+        .ticket-notice{max-width:500px;margin:0 auto 20px;padding:15px;background:#e8e8e8;border-radius:10px;text-align:center;}
+        .ticket-notice p{color:#666;font-size:13px;}
+        .rw{max-width:600px;margin:0 auto;min-height:calc(100vh - 140px);display:flex;flex-direction:column;}
+        .rw-c{flex:1;}
+        .rc{background:#fff;border-radius:10px;padding:22px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:15px;}
+        .rc-t{font-size:21px;font-weight:700;color:#1a1a1a;margin-bottom:18px;}
+        .rc-l{font-size:14px;color:#b0b0b0;margin-bottom:6px;}
+        .ri{display:flex;align-items:center;border:1px solid #ddd;border-radius:6px;background:#fff;margin-bottom:18px;min-height:52px;}
+        .ri input{flex:1;min-width:0;border:none;outline:none;padding:14px;font-size:18px;font-weight:600;color:#333;background:transparent;}
+        .ri input:disabled,.ri input:read-only{background:transparent;color:#333;-webkit-text-fill-color:#333;opacity:1;}
+        .ri input::placeholder{color:#ddd;}
+        .ri-t{flex-shrink:0;padding:14px 16px;color:#b0b0b0;font-size:15px;white-space:nowrap;}
+        .rgi{display:flex;align-items:center;background:#f2f2f2;border-radius:6px;margin-bottom:6px;min-height:50px;}
+        .rgi input{flex:1;min-width:0;border:none;outline:none;padding:13px 14px;font-size:15px;color:#333;background:transparent;cursor:default;}
+        .rgi input:read-only{background:transparent;color:#333;-webkit-text-fill-color:#333;opacity:1;}
+        .rgi input::placeholder{color:#c0c0c0;}
+        .rgi-a{flex-shrink:0;padding:13px 18px;color:#4a90d9;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;background:none;border:none;outline:none!important;-webkit-tap-highlight-color:transparent;}
+        .rgi-a:focus{outline:none!important;box-shadow:none!important;}
+        .rgi-a:hover{color:#2d6cb5;}
+        .rm{font-size:14px;margin-bottom:14px;color:#e74c3c;font-weight:600;}
+        .rbb{display:inline-block;padding:10px 28px;background:#4a90d9;color:#fff;border:none;border-radius:5px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:18px;outline:none!important;-webkit-tap-highlight-color:transparent;}
+        .rbb:focus{outline:none!important;box-shadow:none!important;}
+        .rbb:hover{background:#3a7bc8;}
+        .rbb:disabled,.rbb[disabled]{background:#4a90d9!important;color:#fff!important;opacity:1!important;cursor:not-allowed;}
+        .rbb:disabled:hover,.rbb[disabled]:hover{background:#4a90d9!important;transform:none!important;box-shadow:none!important;}
+        .rn{font-size:15px;color:#4a90d9;line-height:1.6;}
+        .rdm{display:block;margin:15px auto 0;padding:10px 40px;background:#1a1a2e;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+        .rdm:hover{background:#2d2d4e;}
+        .dml{text-align:left;font-size:13px;color:#666;margin-bottom:5px;font-weight:500;display:block;}
+        .dmi{text-align:left!important;font-size:14px!important;letter-spacing:normal!important;}
+        .r-date-display{display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:12px;color:#888;margin-top:4px;margin-bottom:12px;}
+        .r-date-display svg{width:14px;height:14px;fill:#888;flex-shrink:0;}
+        .fixed-footer{position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:#fff;text-align:center;padding:12px 15px;font-size:13px;z-index:99;letter-spacing:0.5px;}
+        .char-count{font-size:11px;color:#999;text-align:right;margin-top:2px;max-width:500px;margin-left:auto;margin-right:auto;}
+        .min-hint{font-size:12px;color:#e74c3c;font-weight:600;margin-top:4px;max-width:500px;margin-left:auto;margin-right:auto;}
+        .income-field-wrap{display:flex;align-items:center;border:2px solid #e0e0e0;border-radius:8px;background:#fff;max-width:500px;margin:0 auto 4px;min-height:48px;}
+        .income-field-wrap input{flex:1;min-width:0;border:none;outline:none;padding:12px 15px;font-size:14px;color:#333;background:transparent;}
+        .income-field-wrap input:disabled,.income-field-wrap input:read-only{background:transparent;color:#333;-webkit-text-fill-color:#333;opacity:1;}
+        .income-field-wrap input::placeholder{color:#ccc;}
+        .income-field-wrap .all-btn{flex-shrink:0;padding:12px 18px;color:#4a90d9;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;background:none;border:none;outline:none!important;-webkit-tap-highlight-color:transparent;}
+        .income-field-wrap .all-btn:focus{outline:none!important;box-shadow:none!important;}
+        .income-field-wrap .all-btn:hover{color:#2d6cb5;}
+    </style>
+</head>
+<body>
+    <!-- LOADING SCREEN -->
+    <div class="loading-screen" id="loadingScreen" onclick="startApp()">
+        <div class="loading-icon"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="none" stroke="#667eea" stroke-width="6" stroke-dasharray="60 200" stroke-linecap="round"/><circle cx="50" cy="50" r="28" fill="none" stroke="#764ba2" stroke-width="4" stroke-dasharray="40 200" stroke-linecap="round"/><circle cx="50" cy="50" r="16" fill="none" stroke="#667eea" stroke-width="3" stroke-dasharray="25 200" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="#764ba2"/></svg></div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header" id="header" style="display:none;">
+        <div class="header-left">
+            <div class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></div>
+            <div class="header-title">Dashboard</div>
+        </div>
+        <div class="header-right">
+            <div class="header-icon" onclick="toggleDropdown('emailDrop')"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                <div class="dropdown-popup" id="emailDrop"><div class="no-data"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><p>No Messages</p></div></div>
+            </div>
+            <div class="header-icon" onclick="toggleDropdown('bellDrop')"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+                <div class="dropdown-popup" id="bellDrop"><div class="no-data"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><p>No Notifications</p></div></div>
+            </div>
+            <div class="profile-avatar-btn" onclick="toggleDropdown('profileDrop')">J
+                <div class="dropdown-popup profile-dropdown profile-dropdown-popup" id="profileDrop">
+                    <div class="profile-dropdown-header"><div class="profile-dropdown-name">John Doe</div><div class="profile-dropdown-email">john.doe@email.com</div></div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" onclick="navigateTo('editProfile')"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profile</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item signout-item" onclick="logoutUser()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>Sign out</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-avatar"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+            <div class="sidebar-username">John</div>
+        </div>
+        <div class="sidebar-nav">
+            <div class="sidebar-item" onclick="navigateTo('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</div>
+
+            <div class="sidebar-item" onclick="toggleSubMenu('profileSub')"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Profile<svg class="arrow" id="profileSubArrow" viewBox="0 0 24 24" width="16" height="16"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            <div class="sidebar-sub" id="profileSub">
+                <div class="sidebar-item" onclick="navigateTo('editProfile')">Edit Profile</div>
+                <div class="sidebar-item" onclick="navigateTo('resetPassword')">Reset Password</div>
+            </div>
+
+            <div class="sidebar-item" onclick="toggleSubMenu('depositSub')"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Deposit<svg class="arrow" id="depositSubArrow" viewBox="0 0 24 24" width="16" height="16"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            <div class="sidebar-sub" id="depositSub">
+                <div class="sidebar-item" onclick="navigateTo('deposit')">Deposit</div>
+                <div class="sidebar-item" onclick="navigateTo('depositHistory')">Deposit History</div>
+            </div>
+
+            <div class="sidebar-item" onclick="toggleSubMenu('teamSub')"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Team<svg class="arrow" id="teamSubArrow" viewBox="0 0 24 24" width="16" height="16"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            <div class="sidebar-sub" id="teamSub">
+                <div class="sidebar-item" onclick="navigateTo('myTotalTeam')">My Total Team</div>
+                <div class="sidebar-item" onclick="navigateTo('myRank')">My Rank</div>
+                <div class="sidebar-item" onclick="navigateTo('nonWorkingIncome')">Non Working Income</div>
+                <div class="sidebar-item" onclick="navigateTo('directIncome')">Direct Income</div>
+                <div class="sidebar-item" onclick="navigateTo('teamIncome')">Team Income</div>
+                <div class="sidebar-item" onclick="navigateTo('royaltyIncome')">Royalty Income</div>
+                <div class="sidebar-item" onclick="navigateTo('incomeHistory')">Income History</div>
+            </div>
+
+            <div class="sidebar-item" onclick="toggleSubMenu('withdrawalSub')"><svg viewBox="0 0 24 24"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-2 0H3V6h14v8zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm13 0v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg>Withdrawal<svg class="arrow" id="withdrawalSubArrow" viewBox="0 0 24 24" width="16" height="16"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+            <div class="sidebar-sub" id="withdrawalSub">
+                <div class="sidebar-item" onclick="navigateTo('withdrawal')">Withdrawal</div>
+                <div class="sidebar-item" onclick="navigateTo('withdrawalToP2P')">Withdrawal to P2P</div>
+                <div class="sidebar-item" onclick="navigateTo('p2pTransfer')">P2P Transfer</div>
+                <div class="sidebar-item" onclick="navigateTo('p2pHistory')">P2P History</div>
+            </div>
+
+            <div class="sidebar-item" onclick="navigateTo('supportTicket')"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>Support Ticket</div>
+
+            <div class="sidebar-item" onclick="logoutUser()" style="color:#e74c3c;"><svg viewBox="0 0 24 24" style="fill:#e74c3c;"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>Sign out</div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dashboard">
+            <div class="dashboard-content">
+                <div class="info-card">
+                    <div class="info-row"><span class="label">Referral</span><span class="value"><span id="referralLink">https://example.com/ref/JHN7829</span><span class="copy-btn" onclick="copyText('referralLink')"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></span></span></div>
+                    <div class="info-row"><span class="label">User id</span><span class="value">USR-489271</span></div>
+                    <div class="info-row"><span class="label">Current Normal Package</span><span class="value">20 USDT</span></div>
+                    <div class="info-row"><span class="label">Activation on</span><span class="value">22/12/25 19:55:55</span></div>
+                    <div class="info-row"><span class="label">Country</span><span class="value">India</span></div>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat-card full-width"><div class="stat-label">All Total Earning</div><div class="stat-value">3.63777 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Total Team</div><div class="stat-value">50 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Total Direct</div><div class="stat-value">5 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Total Team Income</div><div class="stat-value">225 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Today Total Income</div><div class="stat-value">25 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Today Team Reward</div><div class="stat-value">5 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Today ROI</div><div class="stat-value">5 USDT</div></div>
+                    <div class="stat-card full-width"><div class="stat-label">Total ROI</div><div class="stat-value">10 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">First Level</div><div class="stat-value">5</div></div>
+                    <div class="stat-card"><div class="stat-label">Second Level</div><div class="stat-value">15</div></div>
+                    <div class="stat-card full-width"><div class="stat-label">Third Level</div><div class="stat-value">25</div></div>
+                    <div class="stat-card"><div class="stat-label">Royalty Income</div><div class="stat-value">165 USDT</div></div>
+                    <div class="stat-card"><div class="stat-label">Direct Reward</div><div class="stat-value">15 USDT</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT PROFILE -->
+        <div class="page" id="page-editProfile">
+            <div class="page-title">Edit Profile</div>
+            <div class="form-group"><label>Partner ID</label><input type="text" value="john.doe@email.com" readonly></div>
+            <div class="form-group"><label>Partner Name</label><input type="text" value="John Doe" readonly></div>
+            <div class="form-group"><label>Activation Date</label><input type="text" value="22/08/2023" readonly></div>
+            <div class="form-group"><label>Sponsor ID</label><input type="text" value="sponsor.lucky@email.com" readonly></div>
+            <div class="form-group"><label>Sponsor Name</label><input type="text" value="Lucky" readonly></div>
+            <div class="form-group"><label>USDT TRC20 Address</label><input type="text" id="trc20Address" placeholder="Enter USDT TRC20 Address" minlength="10" maxlength="50" oninput="this.value=sanitize(this.value)"></div>
+            <button class="btn btn-primary btn-block" onclick="saveTRC20()">Send OTP</button>
+        </div>
+
+        <!-- RESET PASSWORD -->
+        <div class="page" id="page-resetPassword">
+            <div class="page-title">Reset Password</div>
+            <div class="form-group"><label>Current Password</label><input type="password" id="currentPass" placeholder="Enter current password" minlength="6" maxlength="30" oninput="this.value=sanitize(this.value)"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="newPass" placeholder="Enter new password" minlength="6" maxlength="30" oninput="this.value=sanitize(this.value)"></div>
+            <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmPass" placeholder="Confirm new password" minlength="6" maxlength="30" oninput="this.value=sanitize(this.value)"></div>
+            <button class="btn btn-primary btn-block" onclick="updatePassword()">Update Login Password</button>
+        </div>
+
+        <!-- DEPOSIT -->
+        <div class="page" id="page-deposit">
+            <div class="page-title">Deposit</div>
+            <div class="form-group"><label>Enter Amount</label><input type="number" id="depositAmount" placeholder="Minimum 30 USDT" oninput="sanitizeNum(this)"></div>
+            <div class="min-hint" style="max-width:500px;margin:-10px auto 15px;">Minimum 30 USD</div>
+            <div class="form-group"><label>Mode of Payment</label><select id="paymentMode"><option value="">Select Payment Mode</option><option value="usdt_trc20">USDT TRC20</option></select></div>
+            <button class="btn btn-primary btn-block" onclick="processDeposit()">Process to Add Fund</button>
+        </div>
+
+        <!-- DEPOSIT QR -->
+        <div class="page" id="page-depositQR">
+            <div class="qr-container">
+                <div class="page-title">Deposit USDT TRC20 Address Only</div>
+                <div class="qr-code"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><rect x="5" y="5" width="25" height="25" fill="#000" rx="2"/><rect x="70" y="5" width="25" height="25" fill="#000" rx="2"/><rect x="5" y="70" width="25" height="25" fill="#000" rx="2"/><rect x="10" y="10" width="15" height="15" fill="#fff" rx="1"/><rect x="75" y="10" width="15" height="15" fill="#fff" rx="1"/><rect x="10" y="75" width="15" height="15" fill="#fff" rx="1"/><rect x="13" y="13" width="9" height="9" fill="#000"/><rect x="78" y="13" width="9" height="9" fill="#000"/><rect x="13" y="78" width="9" height="9" fill="#000"/><rect x="45" y="45" width="10" height="10" fill="#000"/><rect x="70" y="70" width="25" height="25" fill="none" stroke="#000" stroke-width="3" rx="2"/><rect x="78" y="78" width="9" height="9" fill="#000"/></svg></div>
+                <div class="address-text" id="depositAddress">TXrk8qFP2wJ9Kd5n7B3Zh4vMLe2GmN8pQ</div>
+                <button class="btn btn-primary" onclick="copyText('depositAddress')" style="margin:10px auto;display:block;">Copy Address</button>
+                <button class="btn btn-success btn-block" onclick="navigateTo('dashboard');alert('Deposit confirmed!')">Add to Confirm</button>
+            </div>
+        </div>
+
+        <!-- DEPOSIT HISTORY -->
+        <div class="page" id="page-depositHistory">
+            <div class="page-title">Add Fund History</div>
+            <div class="table-container">
+                <table><thead><tr><th>S.No</th><th>Deposit Amount</th><th>Date</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>50 USDT</td><td>22/12/2025</td><td class="status-complete">Complete</td></tr>
+                    <tr><td>2</td><td>30 USDT</td><td>20/12/2025</td><td class="status-complete">Complete</td></tr>
+                    <tr><td>3</td><td>100 USDT</td><td>18/12/2025</td><td class="status-pending">Pending</td></tr>
+                    <tr><td>4</td><td>40 USDT</td><td>15/12/2025</td><td class="status-complete">Complete</td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- MY TOTAL TEAM -->
+        <div class="page" id="page-myTotalTeam">
+            <div class="page-title">All Total Team Detail</div>
+            <div class="custom-select"><select id="teamLevelSelect" onchange="changeTeamLevel()"><option value="direct">My Direct</option><option value="level2">Level 2</option><option value="level3">Level 3</option></select></div>
+            <div class="table-container">
+                <table><thead><tr><th>S.No</th><th>Email ID</th><th>Name</th><th>Downline</th><th>Status</th><th>Deposit</th><th>Activation Date</th><th>Registered Date</th></tr></thead>
+                <tbody id="teamTableBody">
+                    <tr><td>1</td><td>user1@email.com</td><td>Alice</td><td>3</td><td class="status-complete">Active</td><td>50 USDT</td><td>22/08/2023</td><td>20/08/2023</td></tr>
+                    <tr><td>2</td><td>user2@email.com</td><td>Bob</td><td>5</td><td class="status-complete">Active</td><td>30 USDT</td><td>25/08/2023</td><td>23/08/2023</td></tr>
+                    <tr><td>3</td><td>user3@email.com</td><td>Charlie</td><td>2</td><td class="status-pending">Inactive</td><td>0 USDT</td><td>-</td><td>28/08/2023</td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- MY RANK -->
+        <div class="page" id="page-myRank">
+            <div class="page-title">My Rank</div>
+            <div style="text-align:center;">
+                <div class="rank-badge"><svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div>
+                <h2 style="color:#333;margin-bottom:5px;">Silver Rank</h2>
+                <p style="color:#888;font-size:14px;">Keep growing your team!</p>
+            </div>
+            <div class="stat-grid" style="margin-top:20px;">
+                <div class="stat-card"><div class="stat-label">Direct Members</div><div class="stat-value">5</div></div>
+                <div class="stat-card"><div class="stat-label">Total Team</div><div class="stat-value">50</div></div>
+                <div class="stat-card full-width"><div class="stat-label">Total Team Business</div><div class="stat-value">1,250 USDT</div></div>
+            </div>
+        </div>
+
+        <!-- NON WORKING INCOME -->
+        <div class="page" id="page-nonWorkingIncome">
+            <div class="page-title">Non Working Income</div>
+            <div class="wallet-box"><div class="wallet-label">Available Balance</div><div class="wallet-amount" id="nwWalletDisplay">30 <span class="wallet-unit">USDT</span></div></div>
+            <div style="max-width:500px;margin:0 auto;">
+                <label style="display:block;font-size:13px;color:#666;margin-bottom:5px;font-weight:500;">Enter Amount</label>
+                <div class="income-field-wrap">
+                    <input type="text" id="nwFieldInput" readonly placeholder="" class="no-grey-disabled">
+                    <button class="all-btn" onclick="nwClickAll()">All</button>
+                </div>
+                <div class="min-hint">Minimum 1 USD</div>
+                <div class="calendar-display" style="margin-top:8px;"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg><span id="nwNextDate"></span></div>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="transferNonWorking()">Send</button>
+        </div>
+
+        <!-- DIRECT INCOME -->
+        <div class="page" id="page-directIncome">
+            <div class="page-title">Direct Income</div>
+            <div class="wallet-box"><div class="wallet-label">Available Balance</div><div class="wallet-amount" id="diWalletDisplay">30 <span class="wallet-unit">USDT</span></div></div>
+            <div class="form-group"><label>Enter Amount</label><input type="number" id="directIncomeAmount" placeholder="Enter amount" oninput="sanitizeNum(this)"></div>
+            <div class="min-hint" style="max-width:500px;margin:-10px auto 15px;">Minimum 1 USD</div>
+            <button class="btn btn-primary btn-block" onclick="transferToWallet('directIncomeAmount','Direct Income','directIncome')">Withdrawal</button>
+        </div>
+
+        <!-- TEAM INCOME -->
+        <div class="page" id="page-teamIncome">
+            <div class="page-title">Team Income</div>
+            <div class="wallet-box"><div class="wallet-label">Available Balance</div><div class="wallet-amount" id="tiWalletDisplay">30 <span class="wallet-unit">USDT</span></div></div>
+            <div class="form-group"><label>Enter Amount</label><input type="number" id="teamIncomeAmount" placeholder="Enter amount" oninput="sanitizeNum(this)"></div>
+            <div class="min-hint" style="max-width:500px;margin:-10px auto 15px;">Minimum 1 USD</div>
+            <button class="btn btn-primary btn-block" onclick="transferToWallet('teamIncomeAmount','Team Income','teamIncome')">Withdrawal</button>
+        </div>
+
+        <!-- ROYALTY INCOME -->
+        <div class="page" id="page-royaltyIncome">
+            <div class="rw"><div class="rw-c">
+                <div class="rc">
+                    <div class="rc-t">Royalty Income($)</div>
+                    <div class="rc-l">Royalty income ($)</div>
+                    <div class="ri"><input type="text" id="rWT" value="0" disabled><span class="ri-t">USDT</span></div>
+                    <div class="rc-l">Enter USDT</div>
+                    <div class="rgi"><input type="text" id="rWI" readonly placeholder=""><button class="rgi-a" onclick="rFA()">All</button></div>
+                    <div class="min-hint">Minimum 1 USD</div>
+                    <div class="r-date-display"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg><span id="rNextDate"></span></div>
+                    <div class="rm" id="rMT">Monthly 0 USDT</div>
+                    <button class="rbb" id="rWithdrawBtn" disabled onclick="rPW()">Withdrawal</button><br><br>
+                    <div class="rn">Based on your direct investment amount, you are eligible for a monthly withdrawal of 1.6%.</div>
+                </div>
+                <button class="rdm" onclick="openDM()">Demo</button>
+            </div></div>
+        </div>
+
+        <!-- INCOME HISTORY -->
+        <div class="page" id="page-incomeHistory">
+            <div class="page-title">Income History</div>
+            <div class="custom-select"><select id="incomeHistorySelect" onchange="changeIncomeHistory()"><option value="teamIncome">Team Income</option><option value="directIncome">Direct Income</option><option value="directReward">Direct Reward</option><option value="nonWorkingIncome">Non Working Income</option><option value="royaltyIncome">Royalty Income</option></select></div>
+            <div class="table-container">
+                <table><thead><tr id="incomeHistoryHeader"><th>S.No</th><th>Amount</th><th>Description</th><th>Date</th></tr></thead>
+                <tbody id="incomeHistoryBody">
+                    <tr><td>1</td><td>50 USDT</td><td>Team Income</td><td>22/12/2025</td></tr>
+                    <tr><td>2</td><td>50 USDT</td><td>Team Income</td><td>20/12/2025</td></tr>
+                    <tr><td>3</td><td>50 USDT</td><td>Team Income</td><td>18/12/2025</td></tr>
+                    <tr><td>4</td><td>50 USDT</td><td>Team Income</td><td>15/12/2025</td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- WITHDRAWAL -->
+        <div class="page" id="page-withdrawal">
+            <div class="page-title">Withdrawal</div>
+            <div class="wallet-box"><div class="wallet-label">Main Wallet Balance</div><div class="wallet-amount" id="mainWalletBalance">50 <span class="wallet-unit">USDT</span></div></div>
+            <button class="btn btn-danger btn-block" onclick="showWithdrawalInput()">Withdrawal</button>
+            <div id="withdrawalInputSection" style="display:none;margin-top:15px;">
+                <div class="form-group"><label>Enter Amount</label><input type="number" id="withdrawAmount" placeholder="Minimum 10 USDT" oninput="sanitizeNum(this)"></div>
+                <div class="min-hint" style="max-width:500px;margin:-10px auto 15px;">Minimum 10 USDT</div>
+                <button class="btn btn-primary btn-block" onclick="processWithdrawal()">Withdrawal</button>
+            </div>
+            <div class="table-container" style="margin-top:25px;">
+                <table><thead><tr><th>S.No</th><th>Type</th><th>Date</th><th>Request</th><th>Fees</th><th>Received</th><th>Status</th></tr></thead>
+                <tbody id="withdrawalTableBody">
+                    <tr><td>1</td><td>Withdrawal</td><td>22/12/2025</td><td>10 USDT</td><td>-</td><td>-</td><td class="status-pending">Pending</td></tr>
+                    <tr><td>2</td><td>Withdrawal</td><td>20/12/2025</td><td>20 USDT</td><td>1 USDT</td><td>19 USDT</td><td class="status-complete">Complete</td></tr>
+                    <tr><td>3</td><td>Withdrawal</td><td>18/12/2025</td><td>15 USDT</td><td>-</td><td>-</td><td class="status-pending">Pending</td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- WITHDRAWAL TO P2P -->
+        <div class="page" id="page-withdrawalToP2P">
+            <div class="page-title">Withdrawal to P2P</div>
+            <div class="wallet-box"><div class="wallet-label">Main Wallet</div><div class="wallet-amount" id="mainWalletP2P">50 <span class="wallet-unit">USDT</span></div></div>
+            <div class="form-group"><label>Enter Amount</label><input type="number" id="p2pTransferAmount" placeholder="Enter amount" oninput="sanitizeNum(this)"></div>
+            <div class="min-hint" style="max-width:500px;margin:-10px auto 15px;">Minimum 1 USD</div>
+            <button class="btn btn-primary btn-block" onclick="transferToP2P()">Transfer</button>
+        </div>
+
+        <!-- P2P TRANSFER -->
+        <div class="page" id="page-p2pTransfer">
+            <div class="page-title">P2P Transfer</div>
+            <div class="wallet-box"><div class="wallet-label">P2P Wallet</div><div class="wallet-amount" id="p2pWalletBalance">0 <span class="wallet-unit">USDT</span></div></div>
+            <div class="form-group"><label>Enter Amount</label><input type="number" id="p2pSendAmount" placeholder="Minimum 30 USDT" oninput="sanitizeNum(this)"></div>
+            <div class="min-hint" style="max-width:500px;margin:-10px auto 15px;">Minimum 30 USD</div>
+            <div class="form-group"><label>Transfer to User</label><input type="email" id="p2pRecipientEmail" placeholder="Enter email address" maxlength="100" oninput="this.value=sanitize(this.value);checkRecipient()"></div>
+            <div class="name-reveal" id="recipientName">Recipient: Alex Johnson</div>
+            <button class="btn btn-primary btn-block" onclick="processP2PTransfer()" style="margin-top:15px;">Transfer</button>
+        </div>
+
+        <!-- P2P HISTORY -->
+        <div class="page" id="page-p2pHistory">
+            <div class="page-title">P2P Transfer History</div>
+            <div class="table-container">
+                <table><thead><tr><th>S.No</th><th>To User</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>alex@email.com</td><td>30 USDT</td><td>22/12/2025</td><td class="status-complete">Complete</td></tr>
+                    <tr><td>2</td><td>bob@email.com</td><td>50 USDT</td><td>20/12/2025</td><td class="status-complete">Complete</td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- SUPPORT TICKET -->
+        <div class="page" id="page-supportTicket">
+            <div id="ticketCreateSection">
+                <div class="page-title">Support Ticket</div>
+                <div class="form-group"><label>Subject (3-100 characters)</label><input type="text" id="ticketSubject" placeholder="Enter ticket subject" minlength="3" maxlength="100" oninput="this.value=sanitize(this.value);updateCharCount('ticketSubject','subjectCharCount',3,100)"><div class="char-count" id="subjectCharCount">0 / 100</div></div>
+                <div class="form-group"><label>Category</label><select id="ticketCategory"><option value="">Select Category</option><option value="Deposit">Deposit Issue</option><option value="Withdrawal">Withdrawal Issue</option><option value="Account">Account Issue</option><option value="Technical">Technical Issue</option><option value="Other">Other</option></select></div>
+                <div class="form-group ticket-area"><label>Message (10-500 characters)</label><textarea id="ticketMessage" placeholder="Describe your issue in detail..." minlength="10" maxlength="500" oninput="this.value=sanitize(this.value);updateCharCount('ticketMessage','messageCharCount',10,500)"></textarea><div class="char-count" id="messageCharCount">0 / 500</div></div>
+                <button class="btn btn-primary btn-block" onclick="createTicket()">Submit Ticket</button>
+            </div>
+            <div id="ticketOpenNotice" class="ticket-notice" style="display:none;"><p>You already have an open ticket. Please resolve or close it before creating a new one.</p></div>
+            <div id="ticketHistorySection">
+                <h3 style="font-size:16px;color:#333;text-align:center;margin:25px 0 15px;">Ticket History</h3>
+                <div id="ticketHistoryList"></div>
+                <div class="no-data-display" id="noTicketData"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg><p>No Tickets Yet</p></div>
+            </div>
+            <div id="ticketDetailView" style="display:none;">
+                <div style="max-width:500px;margin:0 auto;">
+                    <div class="ticket-back-btn" onclick="closeTicketView()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</div>
+                    <div class="ticket-status-bar"><div><div style="font-weight:600;color:#333;font-size:14px;" id="ticketDetailTitle"></div><div style="font-size:12px;color:#888;margin-top:2px;" id="ticketDetailSubject"></div></div><div id="ticketDetailStatus"></div></div>
+                    <div class="ticket-chat-area" id="ticketChatArea"></div>
+                    <div id="ticketWaitingMsg" class="ticket-waiting-msg" style="display:none;">Waiting for admin reply...</div>
+                    <div id="ticketClosedMsg" class="ticket-closed-msg" style="display:none;">This ticket has been closed.</div>
+                    <div id="ticketReplySection" style="display:none;">
+                        <div class="form-group" style="margin-bottom:8px;"><textarea id="ticketReply" placeholder="Type your reply... (3-500 characters)" minlength="3" maxlength="500" style="min-height:80px;resize:vertical;" oninput="this.value=sanitize(this.value);updateCharCount('ticketReply','replyCharCount',3,500)"></textarea><div class="char-count" id="replyCharCount">0 / 500</div></div>
+                        <button class="btn btn-primary btn-block" onclick="sendTicketReply()" style="margin-top:5px;">Send</button>
+                    </div>
+                    <button class="btn btn-block" onclick="closeTicketByUser()" id="closeTicketBtn" style="background:#1a1a2e;color:#fff;margin-top:12px;">Close Ticket</button>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- END MAIN CONTENT -->
+
+    <!-- FOOTER -->
+    <div class="fixed-footer">Central EX Copyright &copy; 2026. All rights reserved</div>
+
+    <!-- OTP MODAL -->
+    <div class="modal-overlay" id="otpModal">
+        <div class="modal-box">
+            <h3>Enter OTP</h3>
+            <p style="color:#888;font-size:13px;margin-bottom:15px;">OTP has been sent to your email</p>
+            <input type="text" id="otpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            <button class="btn btn-primary" onclick="verifyOTP()" style="width:100%;">Verify OTP</button>
+        </div>
+    </div>
+
+    <!-- DEMO MODAL -->
+    <div class="modal-overlay" id="demoModal">
+        <div class="modal-box">
+            <h3>Demo Setup</h3>
+            <p style="color:#888;font-size:13px;margin-bottom:20px;">Set demo values for Royalty Income</p>
+            <label class="dml">Number of Direct Members</label>
+            <input type="number" id="dmDir" placeholder="e.g. 100" class="dmi" style="margin-bottom:15px;" oninput="sanitizeNum(this)">
+            <label class="dml">Total Direct Investment (USDT)</label>
+            <input type="number" id="dmInv" placeholder="e.g. 3000" class="dmi" style="margin-bottom:20px;" oninput="sanitizeNum(this)">
+            <div style="display:flex;gap:10px;">
+                <button class="btn" onclick="closeDM()" style="flex:1;background:#e0e0e0;color:#333;">Cancel</button>
+                <button class="btn btn-primary" onclick="applyDM()" style="flex:1;">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ============================================================
+    // URL ROUTING SYSTEM - Maps page IDs to URL slugs
+    // ============================================================
+    const BASE_PATH = '/members';
+
+    const pageToSlug = {
+        'dashboard': 'dashboard',
+        'editProfile': 'edit-profile',
+        'resetPassword': 'reset-password',
+        'deposit': 'deposit',
+        'depositQR': 'deposit-qr',
+        'depositHistory': 'deposit-history',
+        'myTotalTeam': 'my-total-team',
+        'myRank': 'my-rank',
+        'nonWorkingIncome': 'non-working-income',
+        'directIncome': 'direct-income',
+        'teamIncome': 'team-income',
+        'royaltyIncome': 'royalty-income',
+        'incomeHistory': 'income-history',
+        'withdrawal': 'withdrawal',
+        'withdrawalToP2P': 'withdrawal-to-p2p',
+        'p2pTransfer': 'p2p-transfer',
+        'p2pHistory': 'p2p-history',
+        'supportTicket': 'support-ticket'
+    };
+
+    // Reverse mapping: slug -> pageId
+    const slugToPage = {};
+    for (const [pageId, slug] of Object.entries(pageToSlug)) {
+        slugToPage[slug] = pageId;
+    }
+
+    function getSlugFromPath() {
+        const path = window.location.pathname;
+        const parts = path.replace(BASE_PATH, '').replace(/^\/+|\/+$/g, '');
+        return parts || 'dashboard';
+    }
+
+    function updateURL(pageId) {
+        const slug = pageToSlug[pageId] || 'dashboard';
+        const newPath = BASE_PATH + '/' + slug;
+        if (window.location.pathname !== newPath) {
+            const titles = getPageTitles();
+            const title = titles[pageId] || 'Dashboard';
+            window.history.pushState({ pageId: pageId }, title + ' - Central EX', newPath);
+            document.title = title + ' - Central EX';
+        }
+    }
+
+    function handleRoute() {
+        const slug = getSlugFromPath();
+        const pageId = slugToPage[slug] || 'dashboard';
+        navigateTo(pageId, true); // true = don't push state (it's already set)
+    }
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.pageId) {
+            navigateTo(e.state.pageId, true);
+        } else {
+            handleRoute();
+        }
+    });
+
+    // ============================================================
+    // UTILITY FUNCTIONS
+    // ============================================================
+    function sanitize(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/\//g,'&#x2F;').replace(/`/g,'&#96;').replace(/\\/g,'&#92;');
+    }
+
+    function sanitizeNum(el) {
+        el.value = el.value.replace(/[^0-9.]/g, '');
+        const parts = el.value.split('.');
+        if (parts.length > 2) el.value = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    function updateCharCount(inputId, countId, min, max) {
+        const el = document.getElementById(inputId), countEl = document.getElementById(countId);
+        if (!el || !countEl) return;
+        const len = el.value.length;
+        countEl.textContent = len + ' / ' + max;
+        if (len < min && len > 0) countEl.style.color = '#e74c3c';
+        else if (len >= min) countEl.style.color = '#27ae60';
+        else countEl.style.color = '#999';
+    }
+
+    function getNextMonth1st() {
+        const now = new Date();
+        let y = now.getFullYear(), m = now.getMonth() + 1;
+        if (m > 11) { m = 0; y++; }
+        return new Date(y, m, 1);
+    }
+
+    function formatNextDate() {
+        const nd = getNextMonth1st();
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        return '1st ' + months[nd.getMonth()] + ' ' + nd.getFullYear();
+    }
+
+    function getPageTitles() {
+        return {
+            dashboard: 'Dashboard',
+            editProfile: 'Edit Profile',
+            resetPassword: 'Reset Password',
+            deposit: 'Deposit',
+            depositQR: 'Deposit',
+            depositHistory: 'Deposit History',
+            myTotalTeam: 'My Total Team',
+            myRank: 'My Rank',
+            nonWorkingIncome: 'Non Working Income',
+            directIncome: 'Direct Income',
+            teamIncome: 'Team Income',
+            royaltyIncome: 'Royalty Income',
+            incomeHistory: 'Income History',
+            withdrawal: 'Withdrawal',
+            withdrawalToP2P: 'Withdrawal to P2P',
+            p2pTransfer: 'P2P Transfer',
+            p2pHistory: 'P2P History',
+            supportTicket: 'Support Ticket'
+        };
+    }
+
+    // ============================================================
+    // STATE VARIABLES
+    // ============================================================
+    let currentOTPAction = '';
+    let mainWallet = 50, p2pWallet = 0, withdrawalRowCount = 3;
+    let nonWorkingBalance = 30, directIncomeBalance = 30, teamIncomeBalance = 30;
+    let nwFetchedAvail = 0, nwWithdrawnThisMonth = false;
+    let rDir = 0, rInv = 0, rMonthlyAmount = 0, rFetchedAvail = 0;
+    let rWithdrawnThisMonth = false, rTotalWithdrawn = 0;
+
+    let tickets = [
+        {id:'TKT-1001', subject:'Deposit not credited', category:'Deposit', status:'Closed', date:'18/12/2025', messages:[
+            {sender:'user', text:'I made a deposit of 50 USDT but it has not been credited.', time:'10:30 AM'},
+            {sender:'admin', text:'The deposit has been credited now. Please check.', time:'11:45 AM'},
+            {sender:'user', text:'Yes, I can see it now. Thank you!', time:'12:00 PM'},
+            {sender:'admin', text:'Glad to help! Ticket closed.', time:'12:05 PM'}
+        ], userCanReply:false},
+        {id:'TKT-1000', subject:'Unable to withdraw', category:'Withdrawal', status:'Closed', date:'15/12/2025', messages:[
+            {sender:'user', text:'I am unable to process my withdrawal.', time:'09:00 AM'},
+            {sender:'admin', text:'Please update your TRC20 address and try again.', time:'09:30 AM'},
+            {sender:'user', text:'Done. It works now!', time:'09:45 AM'},
+            {sender:'admin', text:'You are welcome! Closing ticket.', time:'09:50 AM'}
+        ], userCanReply:false}
+    ];
+    let currentTicketIndex = null, ticketIdCounter = 1001;
+
+    // ============================================================
+    // WALLET DISPLAY UPDATE
+    // ============================================================
+    function updateAllWalletDisplays() {
+        document.getElementById('mainWalletBalance').innerHTML = mainWallet.toFixed(2) + ' <span class="wallet-unit">USDT</span>';
+        document.getElementById('mainWalletP2P').innerHTML = mainWallet.toFixed(2) + ' <span class="wallet-unit">USDT</span>';
+        document.getElementById('p2pWalletBalance').innerHTML = p2pWallet.toFixed(2) + ' <span class="wallet-unit">USDT</span>';
+        document.getElementById('nwWalletDisplay').innerHTML = nonWorkingBalance.toFixed(2) + ' <span class="wallet-unit">USDT</span>';
+        document.getElementById('diWalletDisplay').innerHTML = directIncomeBalance.toFixed(2) + ' <span class="wallet-unit">USDT</span>';
+        document.getElementById('tiWalletDisplay').innerHTML = teamIncomeBalance.toFixed(2) + ' <span class="wallet-unit">USDT</span>';
+    }
+
+    // ============================================================
+    // RESET PAGE INPUTS
+    // ============================================================
+    function resetPageInputs(pageId) {
+        const page = document.getElementById('page-' + pageId);
+        if (!page) return;
+        page.querySelectorAll('input[type="text"]:not([readonly]):not([disabled]),input[type="number"]:not([disabled]),input[type="password"],input[type="email"],textarea').forEach(el => { el.value = ''; });
+        page.querySelectorAll('select').forEach(s => { if (s.id !== 'teamLevelSelect' && s.id !== 'incomeHistorySelect') s.selectedIndex = 0; });
+        const wis = document.getElementById('withdrawalInputSection');
+        if (wis) wis.style.display = 'none';
+        page.querySelectorAll('.char-count').forEach(c => {
+            const parts = c.textContent.split('/');
+            c.textContent = '0 / ' + (parts[1] ? parts[1].trim() : '');
+            c.style.color = '#999';
+        });
+    }
+
+    // ============================================================
+    // START APP
+    // ============================================================
+    function startApp() {
+        const ls = document.getElementById('loadingScreen');
+        ls.style.opacity = '0';
+        ls.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => {
+            ls.style.display = 'none';
+            document.getElementById('header').style.display = 'flex';
+            document.getElementById('mainContent').classList.add('show');
+            initTicketPage();
+            updateAllWalletDisplays();
+            document.getElementById('nwNextDate').textContent = formatNextDate();
+            nwSimulateAPIFetch();
+
+            // Route based on current URL
+            handleRoute();
+
+            // Replace current history state so back button works
+            const slug = getSlugFromPath();
+            const pageId = slugToPage[slug] || 'dashboard';
+            window.history.replaceState({ pageId: pageId }, '', window.location.pathname);
+        }, 500);
+    }
+
+    // ============================================================
+    // NAVIGATION - Core function with URL update
+    // ============================================================
+    function navigateTo(pageId, skipPushState) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('show');
+        resetSidebarSubMenus();
+        document.querySelectorAll('.dropdown-popup').forEach(d => d.classList.remove('show'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+        const target = document.getElementById('page-' + pageId);
+        if (target) {
+            target.classList.add('active');
+            target.style.animation = 'none';
+            target.offsetHeight;
+            target.style.animation = 'slideUp 0.4s ease';
+        }
+
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+
+        resetPageInputs(pageId);
+
+        const titles = getPageTitles();
+        document.querySelector('.header-title').textContent = titles[pageId] || 'Dashboard';
+        document.title = (titles[pageId] || 'Dashboard') + ' - Central EX';
+
+        // UPDATE BROWSER URL
+        if (!skipPushState) {
+            updateURL(pageId);
+        }
+
+        if (pageId === 'supportTicket') resetTicketPageView();
+        if (pageId === 'royaltyIncome') rReset();
+        if (pageId === 'nonWorkingIncome') {
+            document.getElementById('nwNextDate').textContent = formatNextDate();
+            nwSimulateAPIFetch();
+            document.getElementById('nwFieldInput').value = '';
+        }
+        updateAllWalletDisplays();
+    }
+
+    // ============================================================
+    // COPY TEXT
+    // ============================================================
+    function copyText(id) {
+        const text = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(text).then(() => alert('Copied!')).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('Copied!');
+        });
+    }
+
+    // ============================================================
+    // DROPDOWNS
+    // ============================================================
+    function toggleDropdown(id) {
+        document.querySelectorAll('.dropdown-popup').forEach(d => { if (d.id !== id) d.classList.remove('show'); });
+        document.getElementById(id).classList.toggle('show');
+        event.stopPropagation();
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.header-icon') && !e.target.closest('.profile-avatar-btn'))
+            document.querySelectorAll('.dropdown-popup').forEach(d => d.classList.remove('show'));
+    });
+
+    // ============================================================
+    // SIDEBAR
+    // ============================================================
+    function resetSidebarSubMenus() {
+        document.querySelectorAll('.sidebar-sub').forEach(s => s.classList.remove('open'));
+        document.querySelectorAll('.sidebar-item .arrow').forEach(a => a.classList.remove('rotated'));
+    }
+
+    function toggleSidebar() {
+        const s = document.getElementById('sidebar'), o = document.getElementById('sidebarOverlay');
+        if (!s.classList.contains('open')) resetSidebarSubMenus();
+        s.classList.toggle('open');
+        o.classList.toggle('show');
+    }
+
+    function toggleSubMenu(id) {
+        document.getElementById(id).classList.toggle('open');
+        const a = document.getElementById(id + 'Arrow');
+        if (a) a.classList.toggle('rotated');
+    }
+
+    // ============================================================
+    // PROFILE / PASSWORD
+    // ============================================================
+    function saveTRC20() {
+        const addr = document.getElementById('trc20Address').value.trim();
+        if (!addr || addr.length < 10) { alert('TRC20 address must be at least 10 characters'); return; }
+        if (addr.length > 50) { alert('TRC20 address must not exceed 50 characters'); return; }
+        sendOTP('trc20Save');
+    }
+
+    function updatePassword() {
+        const cur = document.getElementById('currentPass').value,
+              np = document.getElementById('newPass').value,
+              cp = document.getElementById('confirmPass').value;
+        if (!cur || cur.length < 6) { alert('Current password must be at least 6 characters'); return; }
+        if (!np || np.length < 6) { alert('New password must be at least 6 characters'); return; }
+        if (np.length > 30) { alert('Password must not exceed 30 characters'); return; }
+        if (np !== cp) { alert('Passwords do not match'); return; }
+        sendOTP('passwordUpdate');
+    }
+
+    function sendOTP(action) {
+        currentOTPAction = action;
+        document.getElementById('otpInput').value = '';
+        document.getElementById('otpModal').classList.add('show');
+        alert('OTP sent to your email');
+    }
+
+    function verifyOTP() {
+        const otp = document.getElementById('otpInput').value;
+        if (otp.length < 4) { alert('Please enter valid OTP'); return; }
+        document.getElementById('otpModal').classList.remove('show');
+        if (currentOTPAction === 'trc20Save') alert('TRC20 Address saved!');
+        else if (currentOTPAction === 'passwordUpdate') {
+            alert('Password updated!');
+            document.getElementById('currentPass').value = '';
+            document.getElementById('newPass').value = '';
+            document.getElementById('confirmPass').value = '';
+        }
+    }
+
+    // ============================================================
+    // DEPOSIT
+    // ============================================================
+    function processDeposit() {
+        const a = parseFloat(document.getElementById('depositAmount').value),
+              m = document.getElementById('paymentMode').value;
+        if (!a || a < 30) return;
+        if (!m) { alert('Please select payment mode'); return; }
+        navigateTo('depositQR');
+    }
+
+    // ============================================================
+    // TEAM LEVEL
+    // ============================================================
+    function changeTeamLevel() {
+        const level = document.getElementById('teamLevelSelect').value,
+              tbody = document.getElementById('teamTableBody');
+        const data = {
+            direct: [['1','user1@email.com','Alice','3','Active','50 USDT','22/08/2023','20/08/2023'],['2','user2@email.com','Bob','5','Active','30 USDT','25/08/2023','23/08/2023'],['3','user3@email.com','Charlie','2','Inactive','0 USDT','-','28/08/2023']],
+            level2: [['1','l2user1@email.com','Frank','2','Active','40 USDT','10/09/2023','08/09/2023'],['2','l2user2@email.com','Grace','1','Active','30 USDT','12/09/2023','10/09/2023']],
+            level3: [['1','l3user1@email.com','Ivy','1','Active','50 USDT','20/09/2023','18/09/2023']]
+        };
+        const rows = data[level] || data.level2;
+        tbody.innerHTML = '';
+        rows.forEach(r => {
+            const sc = r[4] === 'Active' ? 'status-complete' : 'status-pending';
+            tbody.innerHTML += `<tr><td>${escapeHTML(r[0])}</td><td>${escapeHTML(r[1])}</td><td>${escapeHTML(r[2])}</td><td>${escapeHTML(r[3])}</td><td class="${sc}">${escapeHTML(r[4])}</td><td>${escapeHTML(r[5])}</td><td>${escapeHTML(r[6])}</td><td>${escapeHTML(r[7])}</td></tr>`;
+        });
+    }
+
+    // ============================================================
+    // INCOME HISTORY
+    // ============================================================
+    function changeIncomeHistory() {
+        const type = document.getElementById('incomeHistorySelect').value,
+              header = document.getElementById('incomeHistoryHeader'),
+              body = document.getElementById('incomeHistoryBody');
+        if (type === 'directReward') {
+            header.innerHTML = '<th>S.No</th><th>Referral ID</th><th>Name</th><th>Sponsor Bonus</th><th>USDT</th><th>Date</th>';
+            body.innerHTML = '<tr><td>1</td><td>ref1@email.com</td><td>Alice</td><td>15 USDT</td><td>15 USDT</td><td>22/12/2025</td></tr><tr><td>2</td><td>ref2@email.com</td><td>Bob</td><td>15 USDT</td><td>15 USDT</td><td>20/12/2025</td></tr><tr><td>3</td><td>ref3@email.com</td><td>Charlie</td><td>15 USDT</td><td>15 USDT</td><td>18/12/2025</td></tr>';
+        } else {
+            header.innerHTML = '<th>S.No</th><th>Amount</th><th>Description</th><th>Date</th>';
+            const desc = {teamIncome:'Team Income', directIncome:'Direct Income', nonWorkingIncome:'Non Working Income', royaltyIncome:'Royalty Income'}[type] || 'Team Income';
+            body.innerHTML = `<tr><td>1</td><td>50 USDT</td><td>${escapeHTML(desc)}</td><td>22/12/2025</td></tr><tr><td>2</td><td>50 USDT</td><td>${escapeHTML(desc)}</td><td>20/12/2025</td></tr><tr><td>3</td><td>50 USDT</td><td>${escapeHTML(desc)}</td><td>18/12/2025</td></tr><tr><td>4</td><td>50 USDT</td><td>${escapeHTML(desc)}</td><td>15/12/2025</td></tr>`;
+        }
+    }
+
+    // ============================================================
+    // TRANSFER TO WALLET (Direct Income / Team Income)
+    // ============================================================
+    function transferToWallet(inputId, type, balanceType) {
+        const a = parseFloat(document.getElementById(inputId).value);
+        if (!a || a < 1) return;
+        let src = 0;
+        if (balanceType === 'directIncome') src = directIncomeBalance;
+        else if (balanceType === 'teamIncome') src = teamIncomeBalance;
+        if (a > src) { alert('Insufficient balance. Available: ' + src.toFixed(2) + ' USDT'); return; }
+        if (balanceType === 'directIncome') directIncomeBalance -= a;
+        else if (balanceType === 'teamIncome') teamIncomeBalance -= a;
+        mainWallet += a;
+        document.getElementById(inputId).value = '';
+        updateAllWalletDisplays();
+        alert(a.toFixed(2) + ' USDT transferred to Main Wallet from ' + type);
+    }
+
+    // ============================================================
+    // NON WORKING INCOME
+    // ============================================================
+    function nwSimulateAPIFetch() {
+        if (!nwWithdrawnThisMonth && nonWorkingBalance > 0) { nwFetchedAvail = nonWorkingBalance; }
+        else { nwFetchedAvail = 0; }
+    }
+
+    function nwClickAll() {
+        if (nwFetchedAvail > 0) {
+            document.getElementById('nwFieldInput').value = nwFetchedAvail.toFixed(2);
+        } else {
+            document.getElementById('nwFieldInput').value = '';
+            alert('Wait for next month to get the bonus. Next eligible date: ' + formatNextDate());
+        }
+    }
+
+    function transferNonWorking() {
+        const val = document.getElementById('nwFieldInput').value;
+        const a = parseFloat(val);
+        if (!a || a < 1) return;
+        if (a > nonWorkingBalance) { alert('Insufficient balance'); return; }
+        mainWallet += a;
+        nonWorkingBalance -= a;
+        nwWithdrawnThisMonth = true;
+        nwFetchedAvail = 0;
+        document.getElementById('nwFieldInput').value = '';
+        updateAllWalletDisplays();
+        alert(a.toFixed(2) + ' USDT transferred to Main Wallet from Non Working Income');
+    }
+
+    // ============================================================
+    // ROYALTY INCOME
+    // ============================================================
+    function rSimulateAPIFetch() {
+        rMonthlyAmount = rInv * 0.016;
+        if (!rWithdrawnThisMonth && rMonthlyAmount > 0) { rFetchedAvail = rMonthlyAmount; }
+        else { rFetchedAvail = 0; }
+    }
+
+    function rReset() {
+        rSimulateAPIFetch();
+        rUpV2();
+    }
+
+    function rUpV2() {
+        const topVal = (rDir * 160) - rTotalWithdrawn;
+        document.getElementById('rWT').value = topVal > 0 ? topVal.toFixed(2) : '0';
+        document.getElementById('rMT').textContent = 'Monthly ' + rMonthlyAmount.toFixed(2) + ' USDT';
+        document.getElementById('rWI').value = '';
+        document.getElementById('rNextDate').textContent = formatNextDate();
+        document.getElementById('rWithdrawBtn').disabled = true;
+    }
+
+    function rFA() {
+        if (rFetchedAvail > 0) {
+            document.getElementById('rWI').value = rFetchedAvail.toFixed(2);
+            if (rFetchedAvail > 1) { document.getElementById('rWithdrawBtn').disabled = false; }
+            else { document.getElementById('rWithdrawBtn').disabled = true; }
+        } else {
+            document.getElementById('rWI').value = '';
+            document.getElementById('rWithdrawBtn').disabled = true;
+            alert('Wait for next month to get the bonus. Next eligible date: ' + formatNextDate());
+        }
+    }
+
+    function rPW() {
+        const btn = document.getElementById('rWithdrawBtn');
+        if (btn.disabled) return;
+        const val = document.getElementById('rWI').value, amt = parseFloat(val);
+        if (!amt || amt <= 1) { btn.disabled = true; return; }
+        mainWallet += amt;
+        rTotalWithdrawn += amt;
+        rWithdrawnThisMonth = true;
+        rFetchedAvail = 0;
+        document.getElementById('rWI').value = '';
+        btn.disabled = true;
+        const topVal = (rDir * 160) - rTotalWithdrawn;
+        document.getElementById('rWT').value = topVal > 0 ? topVal.toFixed(2) : '0';
+        updateAllWalletDisplays();
+        alert(amt.toFixed(2) + ' USDT transferred to Main Wallet from Royalty Income');
+    }
+
+    function openDM() {
+        document.getElementById('dmDir').value = '';
+        document.getElementById('dmInv').value = '';
+        document.getElementById('demoModal').classList.add('show');
+    }
+
+    function closeDM() { document.getElementById('demoModal').classList.remove('show'); }
+
+    function applyDM() {
+        const d = parseInt(document.getElementById('dmDir').value) || 0,
+              inv = parseFloat(document.getElementById('dmInv').value) || 0;
+        if (d < 0) { alert('Enter valid number'); return; }
+        if (inv < 0) { alert('Enter valid amount'); return; }
+        rDir = d; rInv = inv; rMonthlyAmount = inv * 0.016;
+        rWithdrawnThisMonth = false; rFetchedAvail = rMonthlyAmount;
+        rReset(); closeDM();
+        alert('Demo applied!\n\nDirect Members: ' + d + '\nTotal Direct Investment: ' + inv + ' USDT\nTop Display: ' + (d * 160) + ' USDT\nMonthly Royalty (1.6%): ' + rMonthlyAmount.toFixed(2) + ' USDT');
+    }
+
+    // ============================================================
+    // WITHDRAWAL
+    // ============================================================
+    function showWithdrawalInput() {
+        document.getElementById('withdrawalInputSection').style.display = 'block';
+    }
+
+    function processWithdrawal() {
+        const a = parseFloat(document.getElementById('withdrawAmount').value);
+        if (!a || a < 10) return;
+        if (a > mainWallet) { alert('Insufficient balance'); return; }
+        mainWallet -= a;
+        document.getElementById('withdrawalInputSection').style.display = 'none';
+        withdrawalRowCount++;
+        document.getElementById('withdrawalTableBody').insertAdjacentHTML('afterbegin',
+            `<tr><td>${withdrawalRowCount}</td><td>Withdrawal</td><td>${escapeHTML(new Date().toLocaleDateString('en-GB'))}</td><td>${a} USDT</td><td>-</td><td>-</td><td class="status-pending">Pending</td></tr>`);
+        document.getElementById('withdrawAmount').value = '';
+        updateAllWalletDisplays();
+        alert('Withdrawal request submitted');
+    }
+
+    // ============================================================
+    // P2P
+    // ============================================================
+    function transferToP2P() {
+        const a = parseFloat(document.getElementById('p2pTransferAmount').value);
+        if (!a || a < 1) return;
+        if (a > mainWallet) { alert('Insufficient main wallet balance'); return; }
+        mainWallet -= a; p2pWallet += a;
+        document.getElementById('p2pTransferAmount').value = '';
+        updateAllWalletDisplays();
+        alert(a.toFixed(2) + ' USDT transferred to P2P');
+    }
+
+    function checkRecipient() {
+        const e = document.getElementById('p2pRecipientEmail').value,
+              n = document.getElementById('recipientName');
+        if (e.includes('@')) {
+            n.classList.add('show');
+            n.textContent = 'Recipient: ' + ['Alex Johnson','Maria Garcia','James Wilson'][Math.floor(Math.random() * 3)];
+        } else n.classList.remove('show');
+    }
+
+    function processP2PTransfer() {
+        const a = parseFloat(document.getElementById('p2pSendAmount').value),
+              e = document.getElementById('p2pRecipientEmail').value;
+        if (!a || a < 30) return;
+        if (a > p2pWallet) { alert('Insufficient P2P balance'); return; }
+        if (!e || !e.includes('@')) { alert('Enter valid email'); return; }
+        p2pWallet -= a;
+        document.getElementById('p2pSendAmount').value = '';
+        document.getElementById('p2pRecipientEmail').value = '';
+        document.getElementById('recipientName').classList.remove('show');
+        updateAllWalletDisplays();
+        alert('Transfer successful!');
+    }
+
+    // ============================================================
+    // TICKETS
+    // ============================================================
+    function hasOpenTicket() { return tickets.some(t => t.status !== 'Closed'); }
+
+    function initTicketPage() { renderTicketHistory(); updateTicketCreateVisibility(); }
+
+    function resetTicketPageView() {
+        document.getElementById('ticketDetailView').style.display = 'none';
+        document.getElementById('ticketHistorySection').style.display = 'block';
+        updateTicketCreateVisibility();
+        renderTicketHistory();
+    }
+
+    function updateTicketCreateVisibility() {
+        const c = document.getElementById('ticketCreateSection'),
+              n = document.getElementById('ticketOpenNotice');
+        if (hasOpenTicket()) { c.style.display = 'none'; n.style.display = 'block'; }
+        else { c.style.display = 'block'; n.style.display = 'none'; }
+    }
+
+    function renderTicketHistory() {
+        const l = document.getElementById('ticketHistoryList'),
+              nd = document.getElementById('noTicketData');
+        if (!tickets.length) { nd.style.display = 'block'; l.innerHTML = ''; return; }
+        nd.style.display = 'none';
+        let h = '';
+        tickets.forEach((t, i) => {
+            const sc = t.status === 'Closed' ? 'status-complete' : 'status-pending';
+            h += `<div class="history-card"><div class="history-row"><span class="hl">Ticket ID</span><span class="hv">${escapeHTML(t.id)}</span></div><div class="history-row"><span class="hl">Subject</span><span class="hv">${escapeHTML(t.subject)}</span></div><div class="history-row"><span class="hl">Category</span><span class="hv">${escapeHTML(t.category)}</span></div><div class="history-row"><span class="hl">Date</span><span class="hv">${escapeHTML(t.date)}</span></div><div class="history-row"><span class="hl">Status</span><span class="hv ${sc}">${escapeHTML(t.status)}</span></div><div style="text-align:right;margin-top:8px;"><button class="btn btn-primary" style="padding:7px 20px;font-size:12px;" onclick="viewTicket(${i})">View</button></div></div>`;
+        });
+        l.innerHTML = h;
+    }
+
+    function createTicket() {
+        if (hasOpenTicket()) { alert('Close existing ticket first'); return; }
+        const s = sanitize(document.getElementById('ticketSubject').value.trim()),
+              c = document.getElementById('ticketCategory').value,
+              m = sanitize(document.getElementById('ticketMessage').value.trim());
+        if (!s || s.length < 3) { alert('Subject must be at least 3 characters'); return; }
+        if (s.length > 100) { alert('Subject must not exceed 100 characters'); return; }
+        if (!c) { alert('Select category'); return; }
+        if (!m || m.length < 10) { alert('Message must be at least 10 characters'); return; }
+        if (m.length > 500) { alert('Message must not exceed 500 characters'); return; }
+        ticketIdCounter++;
+        const now = new Date();
+        tickets.unshift({
+            id: 'TKT-' + ticketIdCounter, subject: s, category: c, status: 'Pending',
+            date: now.toLocaleDateString('en-GB'),
+            messages: [{sender:'user', text:m, time:now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}],
+            userCanReply: false
+        });
+        document.getElementById('ticketSubject').value = '';
+        document.getElementById('ticketCategory').value = '';
+        document.getElementById('ticketMessage').value = '';
+        document.getElementById('subjectCharCount').textContent = '0 / 100';
+        document.getElementById('subjectCharCount').style.color = '#999';
+        document.getElementById('messageCharCount').textContent = '0 / 500';
+        document.getElementById('messageCharCount').style.color = '#999';
+        renderTicketHistory();
+        updateTicketCreateVisibility();
+        alert('Ticket created!');
+        simulateAdminReply(0);
+    }
+
+    function viewTicket(i) {
+        currentTicketIndex = i;
+        const t = tickets[i];
+        document.getElementById('ticketCreateSection').style.display = 'none';
+        document.getElementById('ticketOpenNotice').style.display = 'none';
+        document.getElementById('ticketHistorySection').style.display = 'none';
+        document.getElementById('ticketDetailView').style.display = 'block';
+        document.getElementById('ticketDetailTitle').textContent = t.id;
+        document.getElementById('ticketDetailSubject').textContent = t.subject + ' • ' + t.category;
+        updateDetailStatus(t);
+        renderChat(t);
+        updateReplyVisibility(t);
+        document.getElementById('closeTicketBtn').style.display = t.status === 'Closed' ? 'none' : 'block';
+    }
+
+    function updateDetailStatus(t) {
+        document.getElementById('ticketDetailStatus').innerHTML = t.status === 'Closed'
+            ? '<span class="status-complete">Closed</span>'
+            : '<span class="status-pending">' + escapeHTML(t.status) + '</span>';
+    }
+
+    function renderChat(t) {
+        const ca = document.getElementById('ticketChatArea');
+        let h = '';
+        t.messages.forEach(m => {
+            const u = m.sender === 'user';
+            h += `<div class="chat-message ${u ? 'user-msg' : 'admin-msg'}"><div class="chat-bubble"><div class="chat-sender">${u ? 'You' : 'Admin'}</div><div>${escapeHTML(m.text)}</div><div class="chat-time">${escapeHTML(m.time)}</div></div></div>`;
+        });
+        ca.innerHTML = h;
+        ca.scrollTop = ca.scrollHeight;
+    }
+
+    function updateReplyVisibility(t) {
+        const r = document.getElementById('ticketReplySection'),
+              w = document.getElementById('ticketWaitingMsg'),
+              c = document.getElementById('ticketClosedMsg');
+        r.style.display = 'none'; w.style.display = 'none'; c.style.display = 'none';
+        if (t.status === 'Closed') { c.style.display = 'block'; return; }
+        if (t.userCanReply) r.style.display = 'block';
+        else w.style.display = 'block';
+    }
+
+    function sendTicketReply() {
+        const r = sanitize(document.getElementById('ticketReply').value.trim());
+        if (!r || r.length < 3) { alert('Reply must be at least 3 characters'); return; }
+        if (r.length > 500) { alert('Reply must not exceed 500 characters'); return; }
+        const t = tickets[currentTicketIndex], now = new Date();
+        t.messages.push({sender:'user', text:r, time:now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})});
+        t.userCanReply = false;
+        t.status = 'Pending';
+        document.getElementById('ticketReply').value = '';
+        document.getElementById('replyCharCount').textContent = '0 / 500';
+        document.getElementById('replyCharCount').style.color = '#999';
+        renderChat(t);
+        updateReplyVisibility(t);
+        updateDetailStatus(t);
+        alert('Reply sent!');
+        simulateAdminReply(currentTicketIndex);
+    }
+
+    function simulateAdminReply(idx) {
+        setTimeout(() => {
+            const t = tickets[idx];
+            if (!t || t.status === 'Closed') return;
+            const reps = ['Thank you. We are looking into this.','We have received your request.','Our team is working on it.','Please let us know if you need more help.','Your issue has been escalated.'];
+            const now = new Date();
+            t.messages.push({sender:'admin', text:reps[Math.floor(Math.random() * reps.length)], time:now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})});
+            t.userCanReply = true;
+            t.status = 'Open';
+            if (currentTicketIndex === idx && document.getElementById('ticketDetailView').style.display !== 'none') {
+                renderChat(t);
+                updateReplyVisibility(t);
+                updateDetailStatus(t);
+                document.getElementById('closeTicketBtn').style.display = 'block';
+            }
+            alert('Admin replied!');
+        }, 4000);
+    }
+
+    function closeTicketByUser() {
+        if (currentTicketIndex === null) return;
+        const t = tickets[currentTicketIndex];
+        t.status = 'Closed';
+        t.userCanReply = false;
+        t.messages.push({sender:'admin', text:'Ticket closed by user.', time:new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})});
+        renderChat(t);
+        updateReplyVisibility(t);
+        updateDetailStatus(t);
+        document.getElementById('closeTicketBtn').style.display = 'none';
+        alert('Ticket closed');
+    }
+
+    function closeTicketView() {
+        document.getElementById('ticketDetailView').style.display = 'none';
+        document.getElementById('ticketHistorySection').style.display = 'block';
+        currentTicketIndex = null;
+        updateTicketCreateVisibility();
+        renderTicketHistory();
+    }
+
+    // ============================================================
+    // LOGOUT
+    // ============================================================
+    function logoutUser() {
+        if (!confirm('Are you sure you want to logout?')) return;
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('show');
+        document.querySelectorAll('.dropdown-popup').forEach(d => d.classList.remove('show'));
+        document.getElementById('mainContent').classList.remove('show');
+        document.getElementById('header').style.display = 'none';
+        document.getElementById('loadingScreen').style.display = 'flex';
+        document.getElementById('loadingScreen').style.opacity = '1';
+        alert('Logged out successfully');
+    }
+
+    // ============================================================
+    // MODAL CLOSE ON OVERLAY CLICK
+    // ============================================================
+    document.getElementById('otpModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+    document.getElementById('demoModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+    </script>
+</body>
+</html>
